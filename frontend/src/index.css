@@ -1,0 +1,161 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Outfit', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --color-bg-dark: #03000a;
+  --color-panel-dark: #0c0817;
+  --color-neon-purple: #9d4edd;
+  --color-neon-pink: #ff007f;
+  --color-neon-cyan: #00f0ff;
+  --color-neon-teal: #0df2c9;
+  --color-neon-blue: #3a86c8;
+}
+
+/* Custom Base Styles */
+body {
+  background-color: var(--color-bg-dark);
+  color: #e2e8f0;
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Glassmorphism panel */
+.glass-panel {
+  background: rgba(12, 8, 23, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-hover:hover {
+  border-color: rgba(157, 78, 221, 0.4);
+  box-shadow: 0 0 25px rgba(157, 78, 221, 0.15);
+  transform: translateY(-2px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Glow Borders */
+.glow-purple {
+  box-shadow: 0 0 20px rgba(157, 78, 221, 0.25);
+  border-color: rgba(157, 78, 221, 0.5);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
+  border-color: rgba(0, 240, 255, 0.5);
+}
+
+.glow-emerald {
+  box-shadow: 0 0 20px rgba(13, 242, 201, 0.25);
+  border-color: rgba(13, 242, 201, 0.5);
+}
+
+/* Scrollbar Customization */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #03000a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #241a38;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3b2a59;
+}
+
+/* Animations */
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+.pulsing-glow-circle {
+  animation: pulseGlow 6s infinite ease-in-out;
+}
+
+@keyframes spinVortex {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.spin-vortex {
+  animation: spinVortex 20s linear infinite;
+}
+
+.spin-vortex-reverse {
+  animation: spinVortex 12s linear infinite reverse;
+}
+
+/* Input Styles */
+.cyber-input {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  border-radius: 8px;
+  padding: 10px 14px;
+  transition: all 0.2s ease-in-out;
+}
+
+.cyber-input:focus {
+  outline: none;
+  border-color: var(--color-neon-purple);
+  box-shadow: 0 0 10px rgba(157, 78, 221, 0.3);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Custom Gradients */
+.gradient-text-purple-cyan {
+  background: linear-gradient(135deg, #d3c2fa 0%, #00f0ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-text-neon {
+  background: linear-gradient(135deg, #ff007f 0%, #9d4edd 50%, #00f0ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-btn {
+  background: linear-gradient(135deg, #9d4edd 0%, #ff007f 100%);
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.gradient-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px rgba(157, 78, 221, 0.5);
+  filter: brightness(1.1);
+}
+
+.gradient-btn-cyan {
+  background: linear-gradient(135deg, #00f0ff 0%, #0df2c9 100%);
+  color: #03000a;
+  font-weight: 700;
+  transition: all 0.3s ease;
+}
+
+.gradient-btn-cyan:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+  filter: brightness(1.1);
+}
