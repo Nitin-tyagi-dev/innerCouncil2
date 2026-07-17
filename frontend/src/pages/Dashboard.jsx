@@ -1,239 +1,577 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import api from '../api/api';
-import { Plus, MessageSquare, Trash2, ArrowRight, HelpCircle, CheckSquare, BarChart, FileText } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
+import api from "../api/api";
+
+import {
+  Plus,
+  Trash2,
+  ArrowRight,
+  Loader2,
+  FolderOpen,
+  FileText,
+  CheckCircle2,
+  Clock3,
+  Calendar,
+  Tag
+} from "lucide-react";
+
+const statusStyles = {
+  pending: {
+    label: "Pending",
+    classes:
+      "bg-amber-500/10 text-amber-300 border border-amber-500/20",
+  },
+
+  analyzed: {
+    label: "Ready",
+    classes:
+      "bg-blue-500/10 text-blue-300 border border-blue-500/20",
+  },
+
+  complete: {
+    label: "Completed",
+    classes:
+      "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20",
+  },
+};
+
+const StatusBadge = ({ status }) => {
+  const style =
+    statusStyles[status] ||
+    statusStyles.pending;
+
+  return (
+    <span
+      className={`rounded-full px-3 py-1 text-xs font-medium ${style.classes}`}
+    >
+      {style.label}
+    </span>
+  );
+};
+
+const MetricCard = ({
+  icon,
+  title,
+  value,
+}) => (
+  <div
+    className="
+      rounded-3xl
+      border
+      border-white/10
+      bg-white/[0.04]
+      backdrop-blur-xl
+      p-6
+    "
+  >
+    <div className="flex items-center justify-between">
+
+      <div>
+
+        <p className="text-sm text-slate-500">
+          {title}
+        </p>
+
+        <h2 className="mt-2 text-4xl font-bold text-white">
+          {value}
+        </h2>
+
+      </div>
+
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+
+        {icon}
+
+      </div>
+
+    </div>
+
+  </div>
+);
+
+const DecisionCard = ({
+  decision,
+  handleDelete,
+}) => (
+  <Link
+    to={`/decisions/${decision._id}`}
+    className="group block"
+  >
+
+    <div
+      className="
+        rounded-[30px]
+        border
+        border-white/10
+        bg-white/[0.04]
+        backdrop-blur-xl
+        p-7
+        transition-all
+        duration-300
+        hover:-translate-y-1
+        hover:border-white/20
+      "
+    >
+
+      <div className="flex items-start justify-between">
+
+        <div className="flex flex-wrap gap-3">
+
+          <StatusBadge
+            status={decision.status}
+          />
+
+          {decision.category && (
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-400">
+
+              <Tag size={13} />
+
+              {decision.category}
+
+            </span>
+          )}
+
+        </div>
+
+        <button
+          onClick={(e) =>
+            handleDelete(
+              decision._id,
+              e
+            )
+          }
+          className="
+            rounded-xl
+            p-2
+            text-slate-500
+            transition
+            hover:bg-red-500/10
+            hover:text-red-400
+          "
+        >
+          <Trash2 size={17} />
+        </button>
+
+      </div>
+
+      <h2 className="mt-6 text-2xl font-semibold text-white">
+
+        {decision.title}
+
+      </h2>
+
+      <p className="mt-4 line-clamp-3 leading-7 text-slate-400">
+
+        {decision.description}
+
+      </p>
+
+      <div className="mt-6 flex flex-wrap gap-2">
+
+        {decision.options
+          ?.slice(0, 4)
+          .map((option, index) => (
+
+            <span
+              key={index}
+              className="
+                rounded-xl
+                border
+                border-white/10
+                bg-white/5
+                px-3
+                py-1.5
+                text-xs
+                text-slate-300
+              "
+            >
+              {option}
+            </span>
+
+          ))}
+
+      </div>
+
+      {decision.finalRecommendation
+        ?.bestOption && (
+
+        <div className="mt-8 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
+
+          <p className="text-xs text-emerald-300">
+
+            Recommended
+
+          </p>
+
+          <h3 className="mt-2 font-medium text-white">
+
+            {
+              decision.finalRecommendation
+                .bestOption
+            }
+
+          </h3>
+
+        </div>
+
+      )}
+
+      <div className="mt-8 flex items-center justify-between border-t border-white/10 pt-6">
+
+        <div className="flex items-center gap-2 text-sm text-slate-500">
+
+          <Calendar size={16} />
+
+          {new Date(
+            decision.createdAt
+          ).toLocaleDateString()}
+
+        </div>
+
+        <div className="flex items-center gap-2 font-medium text-white transition group-hover:translate-x-1">
+
+          View
+
+          <ArrowRight size={17} />
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </Link>
+);
 
 const Dashboard = () => {
-  const [decisions, setDecisions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState('');
 
-  const fetchDecisions = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get('/decisions');
-      setDecisions(response.data);
-    } catch (err) {
-      console.error('Fetch decisions error:', err);
-      setErrorMsg('Failed to load decisions. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [decisions, setDecisions] =
+    useState([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [errorMsg, setErrorMsg] =
+    useState("");
+
+  const fetchDecisions =
+    async () => {
+      try {
+        setLoading(true);
+
+        const res =
+          await api.get(
+            "/decisions"
+          );
+
+        setDecisions(res.data);
+      } catch (err) {
+        console.error(err);
+
+        setErrorMsg(
+          "Unable to load your decisions."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
 
   useEffect(() => {
     fetchDecisions();
   }, []);
 
-  const handleDelete = async (id, e) => {
-    e.preventDefault(); // Stop click propagation to the card link
-    if (window.confirm('Are you sure you want to delete this decision and all associated data?')) {
+  const handleDelete =
+    async (id, e) => {
+
+      e.preventDefault();
+
+      if (
+        !window.confirm(
+          "Delete this decision?"
+        )
+      )
+        return;
+
       try {
-        await api.delete(`/decisions/${id}`);
-        setDecisions(decisions.filter(d => d._id !== id));
-      } catch (err) {
-        console.error('Delete error:', err);
-        alert('Could not delete decision. Please try again.');
+        await api.delete(
+          `/decisions/${id}`
+        );
+
+        setDecisions(
+          decisions.filter(
+            (d) => d._id !== id
+          )
+        );
+      } catch {
+        alert(
+          "Unable to delete decision."
+        );
       }
-    }
-  };
+    };
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'pending':
-        return (
-          <span className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full font-mono font-medium animate-pulse">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-            Pending Context
-          </span>
-        );
-      case 'analyzed':
-        return (
-          <span className="flex items-center gap-1.5 text-xs text-neon-cyan bg-neon-cyan/10 border border-neon-cyan/20 px-2.5 py-0.5 rounded-full font-mono font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-neon-cyan" />
-            Ready for Council
-          </span>
-        );
-      case 'complete':
-        return (
-          <span className="flex items-center gap-1.5 text-xs text-neon-teal bg-neon-teal/10 border border-neon-teal/20 px-2.5 py-0.5 rounded-full font-mono font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-neon-teal" />
-            Deliberated
-          </span>
-        );
-      default:
-        return null;
-    }
-  };
+  const total =
+    decisions.length;
 
-  // Metrics calculations
-  const total = decisions.length;
-  const deliberated = decisions.filter(d => d.status === 'complete').length;
-  const pending = total - deliberated;
+  const completed =
+    decisions.filter(
+      (d) =>
+        d.status === "complete"
+    ).length;
+
+  const pending =
+    total - completed;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-      {/* Upper Welcome Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+
+    <div className="mx-auto max-w-7xl px-6 py-10">
+            {/* Hero */}
+
+      <div className="mb-12 flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+
         <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight m-0 mb-2">
-            Decision Control Center
-          </h1>
-          <p className="text-slate-400 text-sm">
-            Leverage AI intelligence and customized council perspectives to untangle your real-life dilemmas.
+
+          <p className="mb-3 text-sm font-medium text-slate-500">
+            Welcome back
           </p>
+
+          <h1 className="text-5xl font-bold tracking-tight text-white">
+            Decision Dashboard
+          </h1>
+
+          <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-400">
+            Review previous decisions, compare recommendations,
+            and continue making thoughtful choices with your AI Council.
+          </p>
+
         </div>
+
         <Link
           to="/create-decision"
-          className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold gradient-btn shadow-lg shadow-neon-purple/20 cursor-pointer self-start md:self-center"
+          className="
+            inline-flex
+            items-center
+            gap-3
+            rounded-2xl
+            bg-white
+            px-6
+            py-4
+            font-semibold
+            text-black
+            transition-all
+            duration-300
+            hover:-translate-y-0.5
+            hover:bg-slate-200
+          "
         >
-          <Plus className="w-5 h-5" />
-          Create New Dilemma
+          <Plus size={20} />
+          New Decision
         </Link>
+
       </div>
 
-      {/* Metrics Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
-        <div className="glass-panel p-5 rounded-2xl border border-white/5 bg-gradient-to-tr from-white/3 to-transparent flex items-center gap-4">
-          <div className="p-3 bg-neon-purple/10 text-neon-purple rounded-xl">
-            <FileText className="w-6 h-6" />
-          </div>
-          <div>
-            <span className="block text-2xl font-black text-white">{total}</span>
-            <span className="text-xs text-slate-500 font-mono tracking-wider uppercase">Total Dilemmas</span>
-          </div>
-        </div>
+      {/* Stats */}
 
-        <div className="glass-panel p-5 rounded-2xl border border-white/5 bg-gradient-to-tr from-white/3 to-transparent flex items-center gap-4">
-          <div className="p-3 bg-neon-teal/10 text-neon-teal rounded-xl">
-            <CheckSquare className="w-6 h-6" />
-          </div>
-          <div>
-            <span className="block text-2xl font-black text-white">{deliberated}</span>
-            <span className="text-xs text-slate-500 font-mono tracking-wider uppercase">Council Convened</span>
-          </div>
-        </div>
+      <div className="mb-12 grid gap-6 md:grid-cols-3">
 
-        <div className="glass-panel p-5 rounded-2xl border border-white/5 bg-gradient-to-tr from-white/3 to-transparent flex items-center gap-4">
-          <div className="p-3 bg-amber-500/10 text-amber-400 rounded-xl">
-            <HelpCircle className="w-6 h-6" />
-          </div>
-          <div>
-            <span className="block text-2xl font-black text-white">{pending}</span>
-            <span className="text-xs text-slate-500 font-mono tracking-wider uppercase">Awaiting Action</span>
-          </div>
-        </div>
+        <MetricCard
+          title="Total Decisions"
+          value={total}
+          icon={
+            <FileText
+              className="text-white"
+              size={26}
+            />
+          }
+        />
+
+        <MetricCard
+          title="Completed"
+          value={completed}
+          icon={
+            <CheckCircle2
+              className="text-emerald-400"
+              size={26}
+            />
+          }
+        />
+
+        <MetricCard
+          title="Pending"
+          value={pending}
+          icon={
+            <Clock3
+              className="text-amber-300"
+              size={26}
+            />
+          }
+        />
+
       </div>
 
-      {/* Error State */}
+      {/* Error */}
+
       {errorMsg && (
-        <div className="p-4 bg-red-950/20 border border-red-500/30 text-red-400 text-sm font-mono rounded-xl mb-6">
+
+        <div className="mb-8 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-red-300">
+
           {errorMsg}
+
         </div>
+
       )}
 
-      {/* Loading State */}
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 space-y-4">
-          <div className="w-10 h-10 border-4 border-neon-purple border-t-transparent rounded-full animate-spin" />
-          <span className="text-slate-400 text-sm font-mono">Accessing Archives...</span>
-        </div>
-      ) : decisions.length === 0 ? (
-        /* Empty State */
-        <div className="glass-panel rounded-3xl p-10 md:p-16 text-center max-w-2xl mx-auto border border-white/5 shadow-2xl relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-neon-purple/5 to-transparent pointer-events-none" />
-          <div className="relative z-10 space-y-6">
-            <div className="inline-flex p-4 bg-white/5 rounded-full border border-white/10 text-slate-500">
-              <MessageSquare className="w-12 h-12" />
+      {/* Loading */}
+
+      {loading && (
+
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+
+          {Array.from({ length: 6 }).map((_, i) => (
+
+            <div
+              key={i}
+              className="
+                animate-pulse
+                rounded-[30px]
+                border
+                border-white/10
+                bg-white/[0.04]
+                p-7
+              "
+            >
+
+              <div className="mb-6 h-6 w-28 rounded bg-white/10" />
+
+              <div className="mb-4 h-8 w-2/3 rounded bg-white/10" />
+
+              <div className="mb-3 h-4 rounded bg-white/10" />
+
+              <div className="mb-3 h-4 rounded bg-white/10" />
+
+              <div className="mb-8 h-4 w-2/3 rounded bg-white/10" />
+
+              <div className="flex gap-2">
+
+                <div className="h-8 w-20 rounded-xl bg-white/10" />
+
+                <div className="h-8 w-24 rounded-xl bg-white/10" />
+
+              </div>
+
             </div>
-            <h3 className="text-2xl font-bold text-white">No dilemmas registered</h3>
-            <p className="text-slate-400 text-sm max-w-md mx-auto leading-relaxed">
-              Every big decision is easier with a council. Enter your first real-life dilemma, select your options, and trigger the AI debate.
-            </p>
-            <Link
-              to="/create-decision"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold gradient-btn shadow-lg shadow-neon-purple/20 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              Create First Dilemma
-            </Link>
-          </div>
-        </div>
-      ) : (
-        /* Decisions Grid */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {decisions.map((decision) => (
-            <Link
-              key={decision._id}
-              to={`/decisions/${decision._id}`}
-              className="glass-panel glass-panel-hover rounded-2xl p-6 border border-white/5 flex flex-col justify-between hover:no-underline group"
-            >
-              <div className="space-y-4">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-[10px] font-bold text-neon-purple tracking-widest font-mono uppercase bg-neon-purple/10 border border-neon-purple/10 px-2 py-0.5 rounded">
-                    {decision.category || 'GENERAL'}
-                  </span>
-                  {getStatusBadge(decision.status)}
-                </div>
 
-                <div className="space-y-1">
-                  <h3 className="text-lg font-bold text-white group-hover:text-neon-cyan transition-colors duration-200 line-clamp-1">
-                    {decision.title}
-                  </h3>
-                  <p className="text-slate-400 text-xs line-clamp-2 leading-relaxed">
-                    {decision.description}
-                  </p>
-                </div>
-
-                <div className="pt-2">
-                  <span className="text-[10px] font-bold text-slate-500 tracking-wider block font-mono uppercase mb-1">
-                    OPTIONS UNDER CONSIDERATION
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {decision.options.map((opt, idx) => (
-                      <span
-                        key={idx}
-                        className="text-[11px] px-2.5 py-0.5 rounded-full bg-white/5 border border-white/5 text-slate-300"
-                      >
-                        {opt}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {decision.status === 'complete' && decision.finalRecommendation && (
-                  <div className="mt-4 p-3 bg-yellow-500/5 border border-yellow-500/20 rounded-xl">
-                    <span className="text-[9px] font-bold text-yellow-400 tracking-wider block font-mono uppercase">
-                      WINNING RECOMMENDATION
-                    </span>
-                    <span className="text-sm font-bold text-white">
-                      {decision.finalRecommendation.bestOption}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs text-slate-500 font-mono">
-                <span>{new Date(decision.createdAt).toLocaleDateString()}</span>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={(e) => handleDelete(decision._id, e)}
-                    className="p-1.5 hover:bg-red-950/40 border border-transparent hover:border-red-900/40 text-slate-500 hover:text-red-400 rounded-md transition-all duration-200 cursor-pointer"
-                    title="Delete Dilemma"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                  <span className="flex items-center gap-1 text-neon-cyan group-hover:translate-x-1 transition-transform duration-200 font-semibold text-xs">
-                    View
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </span>
-                </div>
-              </div>
-            </Link>
           ))}
+
         </div>
+
+      )}
+
+      {/* Empty */}
+
+      {!loading &&
+        decisions.length === 0 && (
+
+          <div
+            className="
+              rounded-[34px]
+              border
+              border-white/10
+              bg-white/[0.04]
+              py-24
+              text-center
+            "
+          >
+
+            <div className="mx-auto max-w-lg">
+
+              <div
+                className="
+                  mx-auto
+                  mb-8
+                  flex
+                  h-24
+                  w-24
+                  items-center
+                  justify-center
+                  rounded-full
+                  border
+                  border-white/10
+                  bg-white/5
+                "
+              >
+
+                <FolderOpen
+                  size={40}
+                  className="text-slate-400"
+                />
+
+              </div>
+
+              <h2 className="text-3xl font-semibold text-white">
+
+                No Decisions Yet
+
+              </h2>
+
+              <p className="mt-5 leading-8 text-slate-400">
+
+                Start your first decision and let your AI
+                Council analyze every option before you
+                choose.
+
+              </p>
+
+              <Link
+                to="/create-decision"
+                className="
+                  mt-10
+                  inline-flex
+                  items-center
+                  gap-3
+                  rounded-2xl
+                  bg-white
+                  px-6
+                  py-4
+                  font-semibold
+                  text-black
+                  transition
+                  hover:bg-slate-200
+                "
+              >
+
+                <Plus size={18} />
+
+                Create First Decision
+
+              </Link>
+
+            </div>
+
+          </div>
+
+      )}
+
+      {/* Decision Cards */}
+
+      {!loading && decisions.length > 0 && (
+
+        <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+
+          {decisions.map((decision) => (
+
+            <DecisionCard
+              key={decision._id}
+              decision={decision}
+              handleDelete={handleDelete}
+            />
+
+          ))}
+
+        </div>
+
       )}
     </div>
+
   );
 };
 

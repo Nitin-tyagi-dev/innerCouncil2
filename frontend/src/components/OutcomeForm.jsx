@@ -1,142 +1,331 @@
-import React, { useState, useEffect } from 'react';
-import { Smile, Frown, Meh, Save, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import {
+  Smile,
+  Meh,
+  Frown,
+  Save,
+  CheckCircle2,
+} from "lucide-react";
 
-const OutcomeForm = ({ decision, initialOutcome, onSave }) => {
-  const [chosenOption, setChosenOption] = useState('');
-  const [satisfactionScore, setSatisfactionScore] = useState(5);
-  const [notes, setNotes] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [saveStatus, setSaveStatus] = useState(null); // 'success', 'error', null
+const OutcomeForm = ({
+  decision,
+  initialOutcome,
+  onSave,
+}) => {
+  const [chosenOption, setChosenOption] =
+    useState("");
+
+  const [satisfactionScore, setSatisfactionScore] =
+    useState(5);
+
+  const [notes, setNotes] =
+    useState("");
+
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
+
+  const [saveStatus, setSaveStatus] =
+    useState(null);
 
   useEffect(() => {
     if (initialOutcome) {
-      setChosenOption(initialOutcome.chosenOption || '');
-      setSatisfactionScore(initialOutcome.satisfactionScore || 5);
-      setNotes(initialOutcome.notes || '');
-    } else if (decision && decision.options.length > 0) {
-      setChosenOption(decision.options[0]);
+      setChosenOption(
+        initialOutcome.chosenOption || ""
+      );
+
+      setSatisfactionScore(
+        initialOutcome.satisfactionScore || 5
+      );
+
+      setNotes(
+        initialOutcome.notes || ""
+      );
+    } else if (
+      decision?.options?.length
+    ) {
+      setChosenOption(
+        decision.options[0]
+      );
     }
   }, [initialOutcome, decision]);
 
-  const getSmileIcon = (score) => {
-    const props = { className: 'w-8 h-8 transition-colors duration-200' };
-    if (score >= 8) return <Smile {...props} className={`${props.className} text-neon-teal`} />;
-    if (score >= 5) return <Meh {...props} className={`${props.className} text-yellow-400`} />;
-    return <Frown {...props} className={`${props.className} text-rose-500`} />;
+  const getIcon = () => {
+    if (satisfactionScore >= 8)
+      return (
+        <Smile
+          className="text-emerald-400"
+          size={28}
+        />
+      );
+
+    if (satisfactionScore >= 5)
+      return (
+        <Meh
+          className="text-yellow-400"
+          size={28}
+        />
+      );
+
+    return (
+      <Frown
+        className="text-red-400"
+        size={28}
+      />
+    );
   };
 
-  const getSatisfactionLabel = (score) => {
-    if (score >= 9) return 'Extremely Satisfied — Best choice!';
-    if (score >= 7) return 'Satisfied — Good decision.';
-    if (score >= 5) return 'Neutral — Mixed results.';
-    if (score >= 3) return 'Dissatisfied — Regretful decision.';
-    return 'Highly Regretful — Bad choice.';
+  const getLabel = () => {
+    if (satisfactionScore >= 9)
+      return "Excellent decision";
+
+    if (satisfactionScore >= 7)
+      return "Good outcome";
+
+    if (satisfactionScore >= 5)
+      return "Mixed outcome";
+
+    if (satisfactionScore >= 3)
+      return "Poor outcome";
+
+    return "Regretful decision";
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setIsSubmitting(true);
     setSaveStatus(null);
+
     try {
-      await onSave({ chosenOption, satisfactionScore, notes });
-      setSaveStatus('success');
-      setTimeout(() => setSaveStatus(null), 3000);
-    } catch (err) {
-      setSaveStatus('error');
+      await onSave({
+        chosenOption,
+        satisfactionScore,
+        notes,
+      });
+
+      setSaveStatus("success");
+
+      setTimeout(() => {
+        setSaveStatus(null);
+      }, 3000);
+
+    } catch {
+      setSaveStatus("error");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="glass-panel rounded-2xl p-6 border border-white/5 shadow-xl space-y-6">
+    <form
+      onSubmit={handleSubmit}
+      className="
+      rounded-[32px]
+      border
+      border-white/10
+      bg-white/[0.04]
+      backdrop-blur-xl
+      p-8
+      space-y-8
+    "
+    >
+      {/* Header */}
+
       <div>
-        <h3 className="text-xl font-bold text-white mb-1">Journal the Outcome</h3>
-        <p className="text-xs text-slate-400">
-          Reflect back on your decision. Which path did you actually take, and how did it work out?
+
+        <h2 className="text-2xl font-semibold text-white">
+          Record Outcome
+        </h2>
+
+        <p className="mt-2 text-slate-400 leading-7">
+          Compare the actual outcome with
+          your AI Council recommendation.
         </p>
+
       </div>
 
-      {/* Chosen Option Dropdown */}
-      <div className="space-y-2">
-        <label className="block text-xs font-bold text-slate-400 tracking-wider font-mono uppercase">
-          Which Option Did You Select?
+      {/* Option */}
+
+      <div>
+
+        <label className="mb-3 block text-sm font-medium text-slate-300">
+          Selected Option
         </label>
+
         <select
           value={chosenOption}
-          onChange={(e) => setChosenOption(e.target.value)}
-          className="w-full cyber-input text-sm cursor-pointer"
-          required
+          onChange={(e) =>
+            setChosenOption(e.target.value)
+          }
+          className="
+          h-14
+          w-full
+          rounded-2xl
+          border
+          border-white/10
+          bg-white/[0.04]
+          px-4
+          text-white
+          outline-none
+          transition
+          focus:border-indigo-500
+        "
         >
-          {decision.options.map((opt, idx) => (
-            <option key={idx} value={opt} className="bg-panel-dark text-white">
-              {opt}
-            </option>
-          ))}
+          {decision.options.map(
+            (option, index) => (
+              <option
+                key={index}
+                value={option}
+                className="bg-[#111111]"
+              >
+                {option}
+              </option>
+            )
+          )}
         </select>
+
       </div>
 
-      {/* Satisfaction Slider */}
-      <div className="space-y-3">
-        <div className="flex justify-between items-center">
-          <label className="block text-xs font-bold text-slate-400 tracking-wider font-mono uppercase">
-            Satisfaction Score ({satisfactionScore}/10)
+      {/* Satisfaction */}
+
+      <div>
+
+        <div className="mb-5 flex items-center justify-between">
+
+          <label className="text-sm font-medium text-slate-300">
+
+            Satisfaction
+
           </label>
-          {getSmileIcon(satisfactionScore)}
+
+          <div className="flex items-center gap-3">
+
+            {getIcon()}
+
+            <span className="font-medium text-white">
+
+              {satisfactionScore}/10
+
+            </span>
+
+          </div>
+
         </div>
-        
+
         <input
           type="range"
           min="1"
           max="10"
           value={satisfactionScore}
-          onChange={(e) => setSatisfactionScore(Number(e.target.value))}
-          className="w-full h-2 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-neon-purple"
+          onChange={(e) =>
+            setSatisfactionScore(
+              Number(e.target.value)
+            )
+          }
+          className="
+            h-2
+            w-full
+            cursor-pointer
+            accent-white
+          "
         />
 
-        <div className="text-center">
-          <span className="inline-block px-3 py-1 bg-white/3 rounded-lg text-xs font-medium text-slate-300 font-mono">
-            {getSatisfactionLabel(satisfactionScore)}
-          </span>
-        </div>
+        <p className="mt-4 text-center text-sm text-slate-400">
+
+          {getLabel()}
+
+        </p>
+
       </div>
 
-      {/* Notes Textarea */}
-      <div className="space-y-2">
-        <label className="block text-xs font-bold text-slate-400 tracking-wider font-mono uppercase">
-          Outcome Notes / Reflections
+      {/* Notes */}
+
+      <div>
+
+        <label className="mb-3 block text-sm font-medium text-slate-300">
+
+          Notes
+
         </label>
+
         <textarea
+          rows={5}
           value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows="4"
-          placeholder="E.g., It was more expensive than I planned but totally worth it. The premium features are stellar..."
-          className="w-full cyber-input text-sm resize-none"
+          onChange={(e) =>
+            setNotes(e.target.value)
+          }
+          placeholder="Describe what happened after making your decision..."
+          className="
+            w-full
+            rounded-2xl
+            border
+            border-white/10
+            bg-white/[0.04]
+            p-4
+            text-white
+            placeholder:text-slate-500
+            outline-none
+            transition
+            resize-none
+            focus:border-indigo-500
+          "
         />
+
       </div>
 
-      {/* Submit Button */}
-      <div className="flex items-center gap-4">
+      {/* Footer */}
+
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+
         <button
-          type="submit"
           disabled={isSubmitting}
-          className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold gradient-btn shadow-lg shadow-neon-purple/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          className="
+            inline-flex
+            items-center
+            justify-center
+            gap-3
+            rounded-2xl
+            bg-white
+            px-6
+            py-3
+            font-semibold
+            text-black
+            transition
+            hover:bg-slate-200
+            disabled:opacity-60
+          "
         >
-          <Save className="w-4 h-4" />
-          {isSubmitting ? 'Saving...' : 'Save Log Entry'}
+
+          <Save size={18} />
+
+          {isSubmitting
+            ? "Saving..."
+            : "Save Outcome"}
+
         </button>
 
-        {saveStatus === 'success' && (
-          <div className="flex items-center gap-1.5 text-xs text-neon-teal font-mono">
-            <CheckCircle className="w-4 h-4" /> Log entry saved successfully!
+        {saveStatus ===
+          "success" && (
+          <div className="flex items-center gap-2 text-emerald-400">
+
+            <CheckCircle2 size={18} />
+
+            <span>
+              Outcome saved successfully.
+            </span>
+
           </div>
         )}
-        {saveStatus === 'error' && (
-          <div className="text-xs text-rose-400 font-mono">
-            Error saving log entry.
+
+        {saveStatus ===
+          "error" && (
+          <div className="text-red-400">
+            Failed to save outcome.
           </div>
         )}
+
       </div>
+
     </form>
   );
 };

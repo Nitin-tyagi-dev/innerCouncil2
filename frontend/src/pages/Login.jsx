@@ -1,119 +1,223 @@
-import React, { useState, useContext, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
-import { Mail, Lock, LogIn, Cpu } from 'lucide-react';
+import React, { useContext, useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  Sparkles
+} from "lucide-react";
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const { user, login } = useContext(AuthContext);
   const navigate = useNavigate();
+  const { login, user } = useContext(AuthContext);
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    // If already logged in, redirect
-    if (user) {
-      navigate('/dashboard');
-    }
+    if (user) navigate("/dashboard");
   }, [user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMsg('');
-    setIsLoggingIn(true);
+
+    setLoading(true);
+    setErrorMsg("");
 
     const result = await login(email, password);
-    setIsLoggingIn(false);
 
-    if (result.success) {
-      navigate('/dashboard');
-    } else {
-      setErrorMsg(result.error);
-    }
+    setLoading(false);
+
+    if (result.success) navigate("/dashboard");
+    else setErrorMsg(result.error);
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
-      <div className="absolute inset-0 pointer-events-none overflow-hidden max-h-screen">
-        <div className="absolute top-[20%] left-[20%] w-[300px] h-[300px] rounded-full bg-neon-purple/5 blur-[80px] pulsing-glow-circle" />
-        <div className="absolute bottom-[20%] right-[20%] w-[300px] h-[300px] rounded-full bg-neon-pink/5 blur-[80px] pulsing-glow-circle" />
+    <div className="min-h-screen bg-[#09090B] text-white">
+
+      {/* subtle background */}
+
+      <div className="fixed inset-0 overflow-hidden">
+
+        <div className="absolute left-[-150px] top-[-100px] h-[500px] w-[500px] rounded-full bg-indigo-600/10 blur-[180px]" />
+
+        <div className="absolute right-[-100px] bottom-[-120px] h-[500px] w-[500px] rounded-full bg-sky-500/10 blur-[180px]" />
+
       </div>
 
-      <div className="glass-panel max-w-md w-full rounded-3xl p-8 border border-white/5 shadow-2xl relative z-10">
-        <div className="text-center space-y-3 mb-8">
-          <div className="inline-flex p-3 bg-gradient-to-tr from-neon-purple to-neon-pink rounded-2xl shadow-xl shadow-neon-purple/20 mb-2">
-            <Cpu className="w-8 h-8 text-white" />
+      <div className="relative mx-auto flex min-h-screen max-w-7xl">
+
+        {/* LEFT */}
+
+        <div className="flex w-full items-center justify-center px-8 lg:w-[45%]">
+
+          <div className="w-full max-w-md">
+
+            <div className="mb-12">
+
+              <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5 border border-white/10">
+
+                <Sparkles className="h-7 w-7 text-indigo-400"/>
+
+              </div>
+
+              <h1 className="text-5xl font-bold tracking-tight">
+                Welcome back
+              </h1>
+
+              <p className="mt-4 text-slate-400 leading-7">
+                Sign in to continue managing your decisions with
+                Inner Council.
+              </p>
+
+            </div>
+
+            {errorMsg && (
+              <div className="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-300">
+                {errorMsg}
+              </div>
+            )}
+
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-6"
+            >
+
+              <div>
+
+                <label className="mb-2 block text-sm text-slate-400">
+                  Email
+                </label>
+
+                <div className="relative">
+
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18}/>
+
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e)=>setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="h-14 w-full rounded-2xl border border-white/10 bg-white/[0.03] pl-12 pr-4 text-white placeholder:text-slate-600 outline-none transition focus:border-indigo-500 focus:bg-white/[0.05]"
+                  />
+
+                </div>
+
+              </div>
+
+              <div>
+
+                <label className="mb-2 block text-sm text-slate-400">
+                  Password
+                </label>
+
+                <div className="relative">
+
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18}/>
+
+                  <input
+                    type={showPassword ? "text":"password"}
+                    required
+                    value={password}
+                    onChange={(e)=>setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="h-14 w-full rounded-2xl border border-white/10 bg-white/[0.03] pl-12 pr-14 text-white placeholder:text-slate-600 outline-none transition focus:border-indigo-500 focus:bg-white/[0.05]"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={()=>setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+                  >
+                    {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
+                  </button>
+
+                </div>
+
+              </div>
+
+              <div className="flex justify-end">
+
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-slate-400 hover:text-white"
+                >
+                  Forgot password?
+                </Link>
+
+              </div>
+
+              <button
+                disabled={loading}
+                className="group flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-white text-black font-semibold transition hover:bg-slate-200 disabled:opacity-60"
+              >
+
+                {loading ? "Signing in..." : "Sign In"}
+
+                {!loading && (
+                  <ArrowRight
+                    className="transition group-hover:translate-x-1"
+                    size={18}
+                  />
+                )}
+
+              </button>
+
+            </form>
+
+            <p className="mt-10 text-center text-slate-500">
+
+              Don't have an account?
+
+              <Link
+                to="/register"
+                className="ml-2 text-white hover:text-slate-300"
+              >
+                Create account
+              </Link>
+
+            </p>
+
           </div>
-          <h2 className="text-3xl font-extrabold text-white tracking-tight">Welcome Back</h2>
-          <p className="text-slate-400 text-sm">
-            Sign in to access your Inner Council
-          </p>
+
         </div>
 
-        {errorMsg && (
-          <div className="p-4 bg-red-950/20 border border-red-500/30 text-red-400 text-xs font-mono rounded-xl mb-6 flex items-start gap-2">
-            <span>⚠️</span>
-            <span>{errorMsg}</span>
-          </div>
-        )}
+        {/* RIGHT */}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-400 tracking-wider font-mono uppercase">
-              Email Address
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
-                <Mail className="w-5 h-5" />
-              </span>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full cyber-input pl-11 text-sm"
-                placeholder="you@example.com"
-                required
-              />
-            </div>
+        <div className="relative hidden lg:flex lg:w-[55%] items-center justify-center overflow-hidden">
+
+          <div className="absolute h-[650px] w-[650px] rounded-full border border-white/5"/>
+
+          <div className="absolute h-[500px] w-[500px] rounded-full border border-white/5"/>
+
+          <div className="absolute h-[350px] w-[350px] rounded-full border border-white/5"/>
+
+          <div className="absolute h-40 w-40 rounded-full bg-gradient-to-br from-indigo-500/30 to-sky-500/20 blur-3xl"/>
+
+          <div className="relative max-w-md text-center">
+
+            <h2 className="text-4xl font-bold leading-tight">
+              Every important decision deserves thoughtful guidance.
+            </h2>
+
+            <p className="mt-6 text-lg leading-8 text-slate-400">
+              Compare perspectives, evaluate trade-offs, and make confident decisions with your AI council.
+            </p>
+
           </div>
 
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-400 tracking-wider font-mono uppercase">
-              Password
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
-                <Lock className="w-5 h-5" />
-              </span>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full cyber-input pl-11 text-sm"
-                placeholder="••••••••"
-                required
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isLoggingIn}
-            className="w-full py-3 rounded-xl gradient-btn flex items-center justify-center gap-2 shadow-lg shadow-neon-purple/20 cursor-pointer disabled:opacity-50"
-          >
-            <LogIn className="w-5 h-5" />
-            {isLoggingIn ? 'Decrypting Access...' : 'Sign In'}
-          </button>
-        </form>
-
-        <div className="mt-8 text-center text-sm text-slate-400">
-          New to the council?{' '}
-          <Link to="/register" className="text-neon-cyan hover:underline font-semibold font-mono">
-            Register Here
-          </Link>
         </div>
+
       </div>
+
     </div>
   );
 };

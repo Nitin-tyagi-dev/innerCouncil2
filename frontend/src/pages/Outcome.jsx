@@ -1,36 +1,36 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import api from '../api/api';
-import OutcomeForm from '../components/OutcomeForm';
-import { ArrowLeft, CheckSquare } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import api from "../api/api";
+import OutcomeForm from "../components/OutcomeForm";
+import { ArrowLeft, CheckCircle2 } from "lucide-react";
 
 const Outcome = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [decision, setDecision] = useState(null);
   const [outcome, setOutcome] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     const fetchDecisionAndOutcome = async () => {
       try {
         setLoading(true);
-        setErrorMsg('');
-        
+        setErrorMsg("");
+
         const decisionRes = await api.get(`/decisions/${id}`);
         setDecision(decisionRes.data);
 
         try {
           const outcomeRes = await api.get(`/outcomes/${id}`);
           setOutcome(outcomeRes.data);
-        } catch (e) {
-          // Outcome might not be recorded yet
+        } catch {
           setOutcome(null);
         }
       } catch (err) {
-        console.error('Fetch error in outcome page:', err);
-        setErrorMsg('Failed to load decision detail.');
+        console.error(err);
+        setErrorMsg("Unable to load this decision.");
       } finally {
         setLoading(false);
       }
@@ -39,76 +39,119 @@ const Outcome = () => {
     fetchDecisionAndOutcome();
   }, [id]);
 
-  const handleSaveOutcome = async (outcomeData) => {
+  const handleSaveOutcome = async (data) => {
     try {
-      const response = await api.post(`/outcomes/${id}`, outcomeData);
-      setOutcome(response.data);
-      // Redirect back to decision details
+      const res = await api.post(`/outcomes/${id}`, data);
+      setOutcome(res.data);
       navigate(`/decisions/${id}`);
-      return response.data;
     } catch (err) {
-      console.error('Save outcome error:', err);
+      console.error(err);
       throw err;
     }
   };
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-32 space-y-4">
-        <div className="w-12 h-12 border-4 border-neon-purple border-t-transparent rounded-full animate-spin" />
-        <span className="text-slate-400 text-sm font-mono font-medium">Loading outcome profile...</span>
+      <div className="flex min-h-[70vh] items-center justify-center">
+
+        <div className="text-center">
+
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-white" />
+
+          <p className="mt-6 text-sm text-slate-400">
+            Loading outcome...
+          </p>
+
+        </div>
+
       </div>
     );
   }
 
   if (errorMsg || !decision) {
     return (
-      <div className="max-w-md mx-auto text-center py-20 space-y-4">
-        <div className="p-4 bg-red-950/20 border border-red-500/30 text-red-400 rounded-xl">
-          {errorMsg || 'Decision not found or access denied.'}
+      <div className="mx-auto mt-24 max-w-lg">
+
+        <div className="rounded-3xl border border-red-500/20 bg-red-500/10 p-8 text-center">
+
+          <h2 className="text-xl font-semibold text-white">
+            Something went wrong
+          </h2>
+
+          <p className="mt-3 text-slate-400">
+            {errorMsg || "Decision not found."}
+          </p>
+
+          <Link
+            to="/dashboard"
+            className="mt-8 inline-flex rounded-xl bg-white px-5 py-3 font-medium text-black transition hover:bg-slate-200"
+          >
+            Back to Dashboard
+          </Link>
+
         </div>
-        <Link to="/dashboard" className="text-neon-cyan hover:underline">
-          Return to Dashboard
-        </Link>
+
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 pb-16 space-y-8">
-      {/* Back Link */}
+    <div className="mx-auto max-w-4xl px-6 py-10">
+
+      {/* Back */}
+
       <Link
         to={`/decisions/${id}`}
-        className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-200 text-sm font-medium transition-colors hover:no-underline"
+        className="mb-8 inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-white"
       >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Decision Details
+        <ArrowLeft size={18} />
+        Back to Decision
       </Link>
 
-      <div className="glass-panel rounded-3xl p-6 md:p-8 border border-white/5 shadow-xl relative overflow-hidden">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2.5 bg-neon-teal/10 text-neon-teal rounded-xl">
-            <CheckSquare className="w-6 h-6" />
+      {/* Header Card */}
+
+      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-8 backdrop-blur-xl">
+
+        <div className="flex items-start gap-5">
+
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+
+            <CheckCircle2 className="h-7 w-7 text-white" />
+
           </div>
-          <div>
-            <span className="text-[10px] font-bold text-slate-500 tracking-wider block font-mono uppercase">
-              RECORD OUTCOME FOR
-            </span>
-            <h2 className="text-xl font-bold text-white leading-tight">
+
+          <div className="flex-1">
+
+            <p className="text-xs font-medium uppercase tracking-[0.25em] text-slate-500">
+              Outcome Review
+            </p>
+
+            <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">
               {decision.title}
-            </h2>
+            </h1>
+
+            <p className="mt-5 leading-8 text-slate-400">
+              {decision.description}
+            </p>
+
           </div>
+
         </div>
-        <p className="text-slate-400 text-sm leading-relaxed">
-          {decision.description}
-        </p>
+
       </div>
 
-      <OutcomeForm
-        decision={decision}
-        initialOutcome={outcome}
-        onSave={handleSaveOutcome}
-      />
+      {/* Form */}
+
+      <div className="mt-10">
+
+        <OutcomeForm
+          decision={decision}
+          initialOutcome={outcome}
+          onSave={handleSaveOutcome}
+        />
+
+      </div>
+
     </div>
   );
 };

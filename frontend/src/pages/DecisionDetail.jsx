@@ -1,307 +1,601 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import api from '../api/api';
-import RecommendationBox from '../components/RecommendationBox';
-import PersonaCard from '../components/PersonaCard';
-import OutcomeForm from '../components/OutcomeForm';
-import { ArrowLeft, Cpu, ShieldAlert, Sparkles, CheckCircle, HelpCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from "react";
+import { Link, useParams } from "react-router-dom";
+import api from "../api/api";
+
+import RecommendationBox from "../components/RecommendationBox";
+import PersonaCard from "../components/PersonaCard";
+import OutcomeForm from "../components/OutcomeForm";
+
+import {
+  ArrowLeft,
+  Sparkles,
+  BrainCircuit,
+  CheckCircle2,
+  Loader2,
+  Calendar,
+  Tag,
+  Play,
+} from "lucide-react";
 
 const LOADING_MESSAGES = [
-  "Opening AI Council chambers...",
-  "Rational Analyst is calculating utility scores...",
-  "Budget Guardian is auditing price parameters...",
-  "Privacy Guardian is checking security and data footprints...",
-  "Long-Term Planner is estimating long-term lifespan...",
-  "Risk Manager is scouting for single points of failure...",
-  "Emotional Check is weighing stress levels and gut feelings...",
-  "Consolidation algorithms resolving conflicting arguments...",
-  "Drafting consensus statement and tradeoff logs..."
+  "Collecting perspectives...",
+  "Analyzing every option...",
+  "Evaluating trade-offs...",
+  "Comparing long-term outcomes...",
+  "Estimating possible risks...",
+  "Building recommendation...",
+  "Finalizing decision..."
 ];
+
+const statusStyles = {
+  pending: {
+    label: "Pending",
+    classes:
+      "bg-amber-500/10 text-amber-300 border border-amber-500/20",
+  },
+
+  complete: {
+    label: "Completed",
+    classes:
+      "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20",
+  },
+};
+
+const StatusBadge = ({ status }) => {
+  const style =
+    statusStyles[status] ||
+    statusStyles.pending;
+
+  return (
+    <span
+      className={`rounded-full px-3 py-1 text-xs font-medium ${style.classes}`}
+    >
+      {style.label}
+    </span>
+  );
+};
 
 const DecisionDetail = () => {
   const { id } = useParams();
+
   const [decision, setDecision] = useState(null);
   const [evaluation, setEvaluation] = useState(null);
   const [outcome, setOutcome] = useState(null);
+
   const [loading, setLoading] = useState(true);
   const [evaluating, setEvaluating] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  
-  // Loading screen text cycle state
+  const [errorMsg, setErrorMsg] = useState("");
+
   const [msgIndex, setMsgIndex] = useState(0);
-  const cycleInterval = useRef(null);
+
+  const intervalRef = useRef(null);
+
+  useEffect(() => {
+    fetchDetails();
+
+    return () => {
+      if (intervalRef.current)
+        clearInterval(intervalRef.current);
+    };
+  }, [id]);
+
+  useEffect(() => {
+    if (!evaluating) {
+      if (intervalRef.current)
+        clearInterval(intervalRef.current);
+
+      return;
+    }
+
+    setMsgIndex(0);
+
+    intervalRef.current = setInterval(() => {
+      setMsgIndex((prev) =>
+        (prev + 1) % LOADING_MESSAGES.length
+      );
+    }, 1800);
+
+    return () => clearInterval(intervalRef.current);
+  }, [evaluating]);
 
   const fetchDetails = async () => {
     try {
       setLoading(true);
-      setErrorMsg('');
-      
-      const decisionRes = await api.get(`/decisions/${id}`);
+      setErrorMsg("");
+
+      const decisionRes = await api.get(
+        `/decisions/${id}`
+      );
+
       setDecision(decisionRes.data);
 
-      if (decisionRes.data.status === 'complete') {
-        // Fetch evaluation
+      if (
+        decisionRes.data.status === "complete"
+      ) {
         try {
-          const evalRes = await api.get(`/evaluations/${id}`);
-          setEvaluation(evalRes.data);
-        } catch (e) {
-          console.warn('Evaluation not found for complete decision', e);
-        }
+          const evalRes = await api.get(
+            `/evaluations/${id}`
+          );
 
-        // Fetch outcome (if exists)
+          setEvaluation(evalRes.data);
+        } catch {}
+
         try {
-          const outcomeRes = await api.get(`/outcomes/${id}`);
+          const outcomeRes = await api.get(
+            `/outcomes/${id}`
+          );
+
           setOutcome(outcomeRes.data);
-        } catch (e) {
-          // Outcome might not be recorded yet
+        } catch {
           setOutcome(null);
         }
       }
     } catch (err) {
-      console.error('Fetch decision detail error:', err);
-      setErrorMsg('Failed to load decision details.');
+      console.error(err);
+
+      setErrorMsg(
+        "Unable to load this decision."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchDetails();
-    return () => {
-      if (cycleInterval.current) clearInterval(cycleInterval.current);
-    };
-  }, [id]);
-
-  // Handle cycling through messages during evaluation
-  useEffect(() => {
-    if (evaluating) {
-      setMsgIndex(0);
-      cycleInterval.current = setInterval(() => {
-        setMsgIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
-      }, 2200);
-    } else {
-      if (cycleInterval.current) {
-        clearInterval(cycleInterval.current);
-        cycleInterval.current = null;
-      }
-    }
-  }, [evaluating]);
-
   const handleRunCouncil = async () => {
     setEvaluating(true);
-    setErrorMsg('');
+    setErrorMsg("");
+
     try {
-      const response = await api.post(`/evaluations/${id}`);
-      setDecision(response.data.decision);
-      setEvaluation(response.data.evaluation);
+      const res = await api.post(
+        `/evaluations/${id}`
+      );
+
+      setDecision(res.data.decision);
+      setEvaluation(res.data.evaluation);
     } catch (err) {
-      console.error('Run evaluation error:', err);
-      setErrorMsg(err.response?.data?.message || 'The council failed to complete deliberations. Check Gemini API configuration.');
+      setErrorMsg(
+        err.response?.data?.message ||
+          "Failed to evaluate decision."
+      );
     } finally {
       setEvaluating(false);
     }
   };
 
-  const handleSaveOutcome = async (outcomeData) => {
-    try {
-      const response = await api.post(`/outcomes/${id}`, outcomeData);
-      setOutcome(response.data);
-      return response.data;
-    } catch (err) {
-      console.error('Save outcome error:', err);
-      throw err;
-    }
+  const handleSaveOutcome = async (
+    outcomeData
+  ) => {
+    const res = await api.post(
+      `/outcomes/${id}`,
+      outcomeData
+    );
+
+    setOutcome(res.data);
+
+    return res.data;
   };
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-32 space-y-4">
-        <div className="w-12 h-12 border-4 border-neon-purple border-t-transparent rounded-full animate-spin" />
-        <span className="text-slate-400 text-sm font-mono">Unlocking Council Vaults...</span>
+      <div className="flex min-h-[70vh] items-center justify-center">
+
+        <div className="text-center">
+
+          <Loader2 className="mx-auto h-10 w-10 animate-spin text-white" />
+
+          <p className="mt-6 text-slate-400">
+            Loading decision...
+          </p>
+
+        </div>
+
       </div>
     );
   }
 
   if (!decision) {
     return (
-      <div className="max-w-md mx-auto text-center py-20 space-y-4">
-        <div className="p-4 bg-red-950/20 border border-red-500/30 text-red-400 rounded-xl">
-          Dilemma not found or access denied.
-        </div>
-        <Link to="/dashboard" className="text-neon-cyan hover:underline">
-          Return to Dashboard
+      <div className="mx-auto mt-24 max-w-lg rounded-3xl border border-red-500/20 bg-red-500/10 p-10 text-center">
+
+        <h2 className="text-2xl font-semibold text-white">
+          Decision not found
+        </h2>
+
+        <p className="mt-4 text-slate-400">
+          {errorMsg}
+        </p>
+
+        <Link
+          to="/dashboard"
+          className="mt-8 inline-flex rounded-xl bg-white px-5 py-3 font-medium text-black transition hover:bg-slate-200"
+        >
+          Back to Dashboard
         </Link>
+
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 relative">
-      {/* Deciding Chamber Spinner Overlay */}
+    <div className="mx-auto max-w-7xl px-6 py-10">
+
       {evaluating && (
-        <div className="fixed inset-0 bg-slate-950/90 z-50 flex flex-col items-center justify-center p-4">
-          <div className="relative w-48 h-48 mb-8">
-            {/* Nested spin circles simulating AI portal */}
-            <div className="absolute inset-0 border-4 border-neon-purple/20 border-t-neon-purple rounded-full spin-vortex" />
-            <div className="absolute inset-4 border-4 border-neon-cyan/20 border-b-neon-cyan rounded-full spin-vortex-reverse" />
-            <div className="absolute inset-8 border-4 border-neon-pink/20 border-l-neon-pink rounded-full spin-vortex" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Cpu className="w-10 h-10 text-white animate-pulse" />
-            </div>
-          </div>
-          
-          <div className="text-center max-w-md space-y-3">
-            <h3 className="text-2xl font-extrabold text-white tracking-wider">
-              Council is Deliberating...
-            </h3>
-            
-            <div className="h-10 flex items-center justify-center">
-              <p className="text-neon-cyan text-sm font-mono font-medium transition-opacity duration-300">
-                {LOADING_MESSAGES[msgIndex]}
-              </p>
-            </div>
-            
-            <p className="text-xs text-slate-500">
-              Gemini AI is executing concurrent persona simulations. This can take 5 to 15 seconds.
+
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xl">
+
+          <div className="w-full max-w-md rounded-[32px] border border-white/10 bg-[#111111] p-10 text-center">
+
+            <Loader2 className="mx-auto h-14 w-14 animate-spin text-white" />
+
+            <h2 className="mt-8 text-2xl font-semibold text-white">
+              AI Council is thinking
+            </h2>
+
+            <p className="mt-5 text-slate-400">
+              {LOADING_MESSAGES[msgIndex]}
             </p>
+
           </div>
+
+        </div>
+
+      )}
+
+      <Link
+        to="/dashboard"
+        className="mb-8 inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-white"
+      >
+        <ArrowLeft size={18} />
+        Back to Dashboard
+      </Link>
+            {errorMsg && (
+        <div className="mb-8 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-300">
+          {errorMsg}
         </div>
       )}
 
-      {/* Detail Content */}
-      <div className="space-y-8">
-        {/* Back Link */}
-        <Link
-          to="/dashboard"
-          className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-200 text-sm font-medium transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Dashboard
-        </Link>
+      {/* Hero Card */}
 
-        {errorMsg && (
-          <div className="p-4 bg-red-950/20 border border-red-500/30 text-red-400 text-sm font-mono rounded-xl">
-            {errorMsg}
-          </div>
-        )}
+      <div className="rounded-[32px] border border-white/10 bg-white/[0.04] backdrop-blur-xl p-8">
 
-        {/* Top Header Card */}
-        <div className="glass-panel rounded-3xl p-6 md:p-8 border border-white/5 shadow-xl relative overflow-hidden">
-          <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
-            <div className="space-y-3 flex-1">
-              <div className="flex items-center gap-3">
-                <span className="text-[10px] font-bold text-neon-purple tracking-widest font-mono uppercase bg-neon-purple/10 border border-neon-purple/10 px-2.5 py-0.5 rounded">
-                  {decision.category || 'General'}
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
+
+          {/* Left */}
+
+          <div className="flex-1">
+
+            <div className="mb-6 flex flex-wrap items-center gap-3">
+
+              <StatusBadge status={decision.status} />
+
+              {decision.category && (
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-400">
+                  <Tag size={14} />
+                  {decision.category}
                 </span>
-                {decision.status === 'complete' ? (
-                  <span className="flex items-center gap-1 text-xs text-neon-teal bg-neon-teal/10 border border-neon-teal/20 px-2.5 py-0.5 rounded-full font-mono">
-                    Completed
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1 text-xs text-neon-cyan bg-neon-cyan/10 border border-neon-cyan/20 px-2.5 py-0.5 rounded-full font-mono">
-                    Ready to Convene
-                  </span>
-                )}
-              </div>
+              )}
 
-              <h1 className="text-3xl font-extrabold text-white tracking-tight m-0">
-                {decision.title}
-              </h1>
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-400">
+                <Calendar size={14} />
+                {new Date(
+                  decision.createdAt
+                ).toLocaleDateString()}
+              </span>
 
-              <p className="text-slate-300 text-sm md:text-base leading-relaxed">
-                {decision.description}
-              </p>
             </div>
 
-            {decision.status !== 'complete' && (
-              <button
-                onClick={handleRunCouncil}
-                className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-sm font-bold gradient-btn-cyan shadow-lg shadow-neon-cyan/20 cursor-pointer self-start"
-              >
-                <Sparkles className="w-4 h-4" />
-                Run Inner Council
-              </button>
-            )}
+            <h1 className="text-4xl font-bold tracking-tight text-white">
+
+              {decision.title}
+
+            </h1>
+
+            <p className="mt-6 max-w-3xl text-base leading-8 text-slate-400">
+
+              {decision.description}
+
+            </p>
+
           </div>
 
-          {/* Criteria & Personas Quick Summary */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8 pt-8 border-t border-white/5">
-            <div>
-              <span className="text-xs font-bold text-slate-500 tracking-wider block font-mono uppercase mb-3">
-                Extracted Criteria
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {decision.generatedCriteria.map((c, idx) => (
-                  <span
-                    key={idx}
-                    className="text-xs px-3 py-1 rounded-lg bg-white/3 border border-white/5 text-slate-300 font-medium"
-                  >
-                    {c}
-                  </span>
-                ))}
-              </div>
-            </div>
+          {/* Right */}
 
-            <div>
-              <span className="text-xs font-bold text-slate-500 tracking-wider block font-mono uppercase mb-3">
-                Assigned AI Personas
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {decision.selectedPersonas.map((p, idx) => (
-                  <span
-                    key={idx}
-                    className="text-xs px-3 py-1 rounded-lg bg-neon-purple/10 border border-neon-purple/20 text-neon-cyan font-mono"
-                  >
-                    {p}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
+          {decision.status !== "complete" && (
+
+            <button
+              onClick={handleRunCouncil}
+              className="
+              flex
+              items-center
+              gap-3
+              rounded-2xl
+              bg-white
+              px-6
+              py-4
+              font-semibold
+              text-black
+              transition-all
+              duration-300
+              hover:-translate-y-0.5
+              hover:bg-slate-200
+            "
+            >
+
+              <Play size={18} />
+
+              Run AI Council
+
+            </button>
+
+          )}
+
         </div>
 
-        {/* Deliberated View (Recommendations & Debates) */}
-        {decision.status === 'complete' && (
-          <div className="space-y-12">
-            {/* 1. Recommendation Result */}
-            {decision.finalRecommendation && (
-              <div>
-                <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-yellow-400" />
-                  Final Verdict
-                </h3>
-                <RecommendationBox recommendation={decision.finalRecommendation} />
-              </div>
-            )}
+        {/* Divider */}
 
-            {/* 2. Persona Debate Cards */}
-            {evaluation && evaluation.personaDebate && (
-              <div>
-                <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                  <Cpu className="w-5 h-5 text-neon-purple" />
-                  Council Member Perspectives
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {evaluation.personaDebate.map((item, idx) => (
-                    <PersonaCard key={idx} debateData={item} />
-                  ))}
+        <div className="my-10 border-t border-white/10" />
+
+        {/* Bottom */}
+
+        <div className="grid gap-8 lg:grid-cols-2">
+
+          {/* Criteria */}
+
+          <div>
+
+            <h3 className="mb-4 text-sm font-medium uppercase tracking-[0.25em] text-slate-500">
+
+              Evaluation Criteria
+
+            </h3>
+
+            <div className="flex flex-wrap gap-3">
+
+              {decision.generatedCriteria?.map(
+                (item, index) => (
+
+                  <div
+                    key={index}
+                    className="
+                    rounded-xl
+                    border
+                    border-white/10
+                    bg-white/5
+                    px-4
+                    py-2
+                    text-sm
+                    text-slate-300
+                  "
+                  >
+                    {item}
+                  </div>
+
+                )
+              )}
+
+            </div>
+
+          </div>
+
+          {/* Personas */}
+
+          <div>
+
+            <h3 className="mb-4 text-sm font-medium uppercase tracking-[0.25em] text-slate-500">
+
+              AI Council Members
+
+            </h3>
+
+            <div className="flex flex-wrap gap-3">
+
+              {decision.selectedPersonas?.map(
+                (persona, index) => (
+
+                  <div
+                    key={index}
+                    className="
+                    flex
+                    items-center
+                    gap-2
+                    rounded-xl
+                    border
+                    border-white/10
+                    bg-white/5
+                    px-4
+                    py-2
+                  "
+                  >
+
+                    <BrainCircuit
+                      size={15}
+                      className="text-slate-400"
+                    />
+
+                    <span className="text-sm text-slate-300">
+
+                      {persona}
+
+                    </span>
+
+                  </div>
+
+                )
+              )}
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* Results */}
+
+      {decision.status === "complete" && (
+
+        <div className="mt-12 space-y-12">
+
+          {/* Recommendation */}
+
+          {decision.finalRecommendation && (
+
+            <section>
+
+              <div className="mb-6 flex items-center gap-3">
+
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+
+                  <CheckCircle2
+                    className="text-emerald-400"
+                    size={22}
+                  />
+
                 </div>
-              </div>
-            )}
 
-            {/* 3. Outcome Logger */}
-            <div className="max-w-3xl">
+                <div>
+
+                  <h2 className="text-2xl font-semibold text-white">
+
+                    Final Recommendation
+
+                  </h2>
+
+                  <p className="text-slate-500">
+
+                    Generated by your AI Council
+
+                  </p>
+
+                </div>
+
+              </div>
+
+              <RecommendationBox
+                recommendation={
+                  decision.finalRecommendation
+                }
+              />
+
+            </section>
+
+          )}
+                    {/* Persona Opinions */}
+
+          {evaluation?.personaDebate && (
+            <section>
+
+              <div className="mb-8 flex items-center gap-3">
+
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+
+                  <Sparkles
+                    size={20}
+                    className="text-white"
+                  />
+
+                </div>
+
+                <div>
+
+                  <h2 className="text-2xl font-semibold text-white">
+                    AI Council Perspectives
+                  </h2>
+
+                  <p className="text-slate-500">
+                    Individual reasoning from every council member.
+                  </p>
+
+                </div>
+
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+
+                {evaluation.personaDebate.map(
+                  (item, index) => (
+
+                    <div
+                      key={index}
+                      className="
+                        rounded-3xl
+                        border
+                        border-white/10
+                        bg-white/[0.04]
+                        backdrop-blur-xl
+                        p-1
+                      "
+                    >
+
+                      <PersonaCard debateData={item} />
+
+                    </div>
+
+                  )
+                )}
+
+              </div>
+
+            </section>
+          )}
+
+          {/* Outcome */}
+
+          <section>
+
+            <div className="mb-8 flex items-center gap-3">
+
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+
+                <CheckCircle2
+                  size={20}
+                  className="text-white"
+                />
+
+              </div>
+
+              <div>
+
+                <h2 className="text-2xl font-semibold text-white">
+                  Record Outcome
+                </h2>
+
+                <p className="text-slate-500">
+                  Compare your final decision with the AI recommendation.
+                </p>
+
+              </div>
+
+            </div>
+
+            <div
+              className="
+                rounded-[32px]
+                border
+                border-white/10
+                bg-white/[0.04]
+                backdrop-blur-xl
+                p-8
+              "
+            >
+
               <OutcomeForm
                 decision={decision}
                 initialOutcome={outcome}
                 onSave={handleSaveOutcome}
               />
+
             </div>
-          </div>
-        )}
-      </div>
+
+          </section>
+
+        </div>
+
+      )}
+
     </div>
+
   );
 };
 

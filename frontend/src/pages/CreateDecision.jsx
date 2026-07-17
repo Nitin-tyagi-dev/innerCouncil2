@@ -1,193 +1,576 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import api from '../api/api';
-import { Plus, Trash2, HelpCircle, Save, FileText, List } from 'lucide-react';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../api/api";
+
+import {
+  Plus,
+  Trash2,
+  Save,
+  ArrowLeft,
+  FileText,
+  ListChecks,
+  Sparkles,
+} from "lucide-react";
 
 const CreateDecision = () => {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [options, setOptions] = useState(['', '']);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
-  const handleOptionChange = (index, value) => {
-    const updatedOptions = [...options];
-    updatedOptions[index] = value;
-    setOptions(updatedOptions);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [options, setOptions] = useState(["", ""]);
+
+  const [errorMsg, setErrorMsg] =
+    useState("");
+
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
+
+  const handleOptionChange = (
+    index,
+    value
+  ) => {
+    const updated = [...options];
+    updated[index] = value;
+    setOptions(updated);
   };
 
   const addOptionField = () => {
-    setOptions([...options, '']);
+    setOptions([...options, ""]);
   };
 
-  const removeOptionField = (index) => {
+  const removeOptionField = (
+    index
+  ) => {
     if (options.length <= 2) {
-      setErrorMsg('You must provide at least 2 options.');
+      setErrorMsg(
+        "At least two options are required."
+      );
       return;
     }
-    const updatedOptions = options.filter((_, idx) => idx !== index);
-    setOptions(updatedOptions);
+
+    setOptions(
+      options.filter(
+        (_, i) => i !== index
+      )
+    );
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMsg('');
 
-    // Validations
-    if (!title.trim() || !description.trim()) {
-      setErrorMsg('Title and description are required.');
+    setErrorMsg("");
+
+    if (
+      !title.trim() ||
+      !description.trim()
+    ) {
+      setErrorMsg(
+        "Please complete all required fields."
+      );
       return;
     }
 
-    const filteredOptions = options.map((opt) => opt.trim()).filter((opt) => opt !== '');
-    if (filteredOptions.length < 2) {
-      setErrorMsg('Please specify at least 2 non-empty options for the council to evaluate.');
+    const filteredOptions =
+      options
+        .map((o) => o.trim())
+        .filter(Boolean);
+
+    if (
+      filteredOptions.length < 2
+    ) {
+      setErrorMsg(
+        "Please provide at least two options."
+      );
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const response = await api.post('/decisions', {
-        title,
-        description,
-        options: filteredOptions,
-      });
-      // Redirect to the newly created decision page
-      navigate(`/decisions/${response.data._id}`);
+      const res = await api.post(
+        "/decisions",
+        {
+          title,
+          description,
+          options:
+            filteredOptions,
+        }
+      );
+
+      navigate(
+        `/decisions/${res.data._id}`
+      );
     } catch (err) {
-      console.error('Submit dilemma error:', err);
-      setErrorMsg(err.response?.data?.message || 'Error occurred while creating the decision.');
+      setErrorMsg(
+        err.response?.data
+          ?.message ||
+          "Unable to create decision."
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 pb-16">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-extrabold text-white tracking-tight m-0 mb-2">
-          State Your Dilemma
-        </h1>
-        <p className="text-slate-400 text-sm">
-          Define the context, explanation, and potential paths. The AI will parse this to generate custom evaluation criteria.
-        </p>
+    <div className="mx-auto max-w-5xl px-6 py-10">
+
+      <button
+        onClick={() =>
+          navigate("/dashboard")
+        }
+        className="mb-8 flex items-center gap-2 text-sm text-slate-400 transition hover:text-white"
+      >
+        <ArrowLeft size={17} />
+        Back to Dashboard
+      </button>
+
+      {/* Hero */}
+
+      <div className="mb-12">
+
+        <div className="flex items-center gap-4">
+
+          <div
+            className="
+            flex
+            h-16
+            w-16
+            items-center
+            justify-center
+            rounded-3xl
+            border
+            border-white/10
+            bg-white/5
+          "
+          >
+            <Sparkles
+              className="text-white"
+              size={30}
+            />
+          </div>
+
+          <div>
+
+            <h1 className="text-5xl font-bold tracking-tight text-white">
+              Create Decision
+            </h1>
+
+            <p className="mt-3 max-w-2xl text-lg leading-8 text-slate-400">
+              Give your AI Council the
+              context it needs to
+              evaluate every option and
+              recommend the best path.
+            </p>
+
+          </div>
+
+        </div>
+
       </div>
 
       {errorMsg && (
-        <div className="p-4 bg-red-950/20 border border-red-500/30 text-red-400 text-sm font-mono rounded-xl mb-6">
+
+        <div className="mb-8 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-red-300">
+
           {errorMsg}
+
         </div>
+
       )}
 
-      {/* Main Form */}
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Core Info */}
-        <div className="glass-panel rounded-2xl p-6 border border-white/5 shadow-xl space-y-6">
-          <div className="flex items-center gap-3 mb-2 border-b border-white/5 pb-4">
-            <FileText className="w-5 h-5 text-neon-purple" />
-            <h3 className="text-lg font-bold text-white">Dilemma Parameters</h3>
-          </div>
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-10"
+      >
 
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-400 tracking-wider font-mono uppercase">
-              Decision Title / Dilemma
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full cyber-input text-sm"
-              placeholder="e.g., Which smartphone should I purchase next?"
-              required
-            />
-            <span className="text-[10px] text-slate-500 block">Keep it concise and clear.</span>
-          </div>
+        {/* Details */}
 
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-400 tracking-wider font-mono uppercase">
-              Detailed Description / Context
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows="5"
-              className="w-full cyber-input text-sm resize-none"
-              placeholder="e.g., I'm stuck between getting an iPhone 15 Pro and a Google Pixel 8 Pro. I care heavily about photo quality, data privacy, long-term battery health, and price since I plan to keep the device for at least 4 years..."
-              required
-            />
-            <span className="text-[10px] text-slate-500 block">
-              Provide extra background details like what factors you care about, budget constraints, or usage style.
-            </span>
-          </div>
-        </div>
+        <section
+          className="
+          rounded-[32px]
+          border
+          border-white/10
+          bg-white/[0.04]
+          backdrop-blur-xl
+          p-8
+        "
+        >
 
-        {/* Options */}
-        <div className="glass-panel rounded-2xl p-6 border border-white/5 shadow-xl space-y-6">
-          <div className="flex items-center justify-between border-b border-white/5 pb-4">
-            <div className="flex items-center gap-3">
-              <List className="w-5 h-5 text-neon-cyan" />
-              <h3 className="text-lg font-bold text-white">Options to Evaluate</h3>
+          <div className="mb-8 flex items-center gap-3">
+
+            <div
+              className="
+              flex
+              h-12
+              w-12
+              items-center
+              justify-center
+              rounded-2xl
+              border
+              border-white/10
+              bg-white/5
+            "
+            >
+
+              <FileText
+                size={22}
+                className="text-white"
+              />
+
             </div>
+
+            <div>
+
+              <h2 className="text-2xl font-semibold text-white">
+
+                Decision Details
+
+              </h2>
+
+              <p className="text-slate-500">
+
+                Explain your situation.
+
+              </p>
+
+            </div>
+
+          </div>
+
+          <div className="space-y-7">
+
+            <div>
+
+              <label className="mb-3 block text-sm font-medium text-slate-300">
+
+                Decision Title
+
+              </label>
+
+              <input
+                type="text"
+                value={title}
+                onChange={(e) =>
+                  setTitle(
+                    e.target.value
+                  )
+                }
+                placeholder="Should I buy a MacBook Pro or Dell XPS?"
+                className="
+                h-14
+                w-full
+                rounded-2xl
+                border
+                border-white/10
+                bg-white/[0.04]
+                px-5
+                text-white
+                placeholder:text-slate-500
+                outline-none
+                transition
+                focus:border-indigo-500
+              "
+              />
+
+            </div>
+
+            <div>
+
+              <label className="mb-3 block text-sm font-medium text-slate-300">
+
+                Context
+
+              </label>
+
+              <textarea
+                rows={7}
+                value={description}
+                onChange={(e) =>
+                  setDescription(
+                    e.target.value
+                  )
+                }
+                placeholder="Explain your situation, priorities, constraints and anything your AI Council should know..."
+                className="
+                w-full
+                rounded-2xl
+                border
+                border-white/10
+                bg-white/[0.04]
+                p-5
+                text-white
+                placeholder:text-slate-500
+                outline-none
+                resize-none
+                transition
+                focus:border-indigo-500
+              "
+              />
+
+            </div>
+
+          </div>
+
+        </section>
+                {/* Options */}
+
+        <section
+          className="
+          rounded-[32px]
+          border
+          border-white/10
+          bg-white/[0.04]
+          backdrop-blur-xl
+          p-8
+        "
+        >
+
+          <div className="mb-8 flex items-center justify-between">
+
+            <div className="flex items-center gap-3">
+
+              <div
+                className="
+                flex
+                h-12
+                w-12
+                items-center
+                justify-center
+                rounded-2xl
+                border
+                border-white/10
+                bg-white/5
+              "
+              >
+                <ListChecks
+                  size={22}
+                  className="text-white"
+                />
+              </div>
+
+              <div>
+
+                <h2 className="text-2xl font-semibold text-white">
+                  Decision Options
+                </h2>
+
+                <p className="text-slate-500">
+                  Add every option you want the AI Council to evaluate.
+                </p>
+
+              </div>
+
+            </div>
+
             <button
               type="button"
               onClick={addOptionField}
-              className="flex items-center gap-1.5 text-xs font-bold text-neon-cyan hover:text-neon-teal px-3 py-1.5 bg-neon-cyan/5 hover:bg-neon-cyan/10 border border-neon-cyan/20 rounded-lg transition-colors cursor-pointer"
+              className="
+                inline-flex
+                items-center
+                gap-2
+                rounded-2xl
+                border
+                border-white/10
+                bg-white/5
+                px-4
+                py-3
+                text-sm
+                font-medium
+                text-white
+                transition
+                hover:bg-white/10
+              "
             >
-              <Plus className="w-4 h-4" />
+
+              <Plus size={18} />
+
               Add Option
+
             </button>
+
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
+
             {options.map((option, index) => (
-              <div key={index} className="flex gap-3 items-center">
-                <span className="text-xs font-mono font-bold text-slate-500 w-6">
-                  #{index + 1}
-                </span>
+
+              <div
+                key={index}
+                className="flex items-center gap-4"
+              >
+
+                <div
+                  className="
+                  flex
+                  h-12
+                  w-12
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-xl
+                  border
+                  border-white/10
+                  bg-white/5
+                  font-semibold
+                  text-slate-400
+                "
+                >
+                  {index + 1}
+                </div>
+
                 <input
                   type="text"
                   value={option}
-                  onChange={(e) => handleOptionChange(index, e.target.value)}
-                  className="flex-1 cyber-input text-sm"
-                  placeholder={`Option e.g., Apple iPhone 15 Pro`}
-                  required
+                  onChange={(e) =>
+                    handleOptionChange(
+                      index,
+                      e.target.value
+                    )
+                  }
+                  placeholder={`Option ${index + 1}`}
+                  className="
+                    h-14
+                    flex-1
+                    rounded-2xl
+                    border
+                    border-white/10
+                    bg-white/[0.04]
+                    px-5
+                    text-white
+                    placeholder:text-slate-500
+                    outline-none
+                    transition
+                    focus:border-indigo-500
+                  "
                 />
+
                 <button
                   type="button"
-                  onClick={() => removeOptionField(index)}
+                  onClick={() =>
+                    removeOptionField(index)
+                  }
                   disabled={options.length <= 2}
-                  className="p-2.5 bg-red-950/20 hover:bg-red-950/40 border border-red-900/30 hover:border-red-700/50 text-red-400 rounded-lg disabled:opacity-30 disabled:hover:bg-red-950/20 disabled:hover:border-red-900/30 disabled:cursor-not-allowed cursor-pointer"
-                  title="Remove Option"
+                  className="
+                    flex
+                    h-12
+                    w-12
+                    items-center
+                    justify-center
+                    rounded-xl
+                    border
+                    border-red-500/20
+                    bg-red-500/10
+                    text-red-400
+                    transition
+                    hover:bg-red-500/20
+                    disabled:cursor-not-allowed
+                    disabled:opacity-30
+                  "
                 >
-                  <Trash2 className="w-4 h-4" />
+
+                  <Trash2 size={18} />
+
                 </button>
+
               </div>
+
             ))}
+
           </div>
+
+        </section>
+
+        {/* Footer */}
+
+        <div className="sticky bottom-6">
+
+          <div
+            className="
+            flex
+            flex-col
+            gap-4
+            rounded-[28px]
+            border
+            border-white/10
+            bg-[#0f0f11]/90
+            p-6
+            backdrop-blur-2xl
+            sm:flex-row
+            sm:items-center
+            sm:justify-between
+          "
+          >
+
+            <div>
+
+              <h3 className="font-semibold text-white">
+                Ready to analyze?
+              </h3>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Your AI Council will evaluate every option and generate a recommendation.
+              </p>
+
+            </div>
+
+            <div className="flex gap-3">
+
+              <button
+                type="button"
+                onClick={() =>
+                  navigate("/dashboard")
+                }
+                className="
+                  rounded-2xl
+                  border
+                  border-white/10
+                  px-6
+                  py-3
+                  font-medium
+                  text-slate-300
+                  transition
+                  hover:bg-white/5
+                "
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="
+                  inline-flex
+                  items-center
+                  gap-3
+                  rounded-2xl
+                  bg-white
+                  px-7
+                  py-3
+                  font-semibold
+                  text-black
+                  transition
+                  hover:bg-slate-200
+                  disabled:opacity-60
+                "
+              >
+
+                <Save size={18} />
+
+                {isSubmitting
+                  ? "Creating..."
+                  : "Create Decision"}
+
+              </button>
+
+            </div>
+
+          </div>
+
         </div>
 
-        {/* Buttons */}
-        <div className="flex items-center justify-end gap-4">
-          <button
-            type="button"
-            onClick={() => navigate('/dashboard')}
-            className="px-6 py-3 rounded-xl border border-white/10 text-slate-400 hover:text-slate-200 hover:bg-white/5 text-sm font-semibold transition-colors cursor-pointer"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="flex items-center justify-center gap-2 px-8 py-3 rounded-xl text-sm font-bold gradient-btn shadow-lg shadow-neon-purple/20 cursor-pointer disabled:opacity-50"
-          >
-            <Save className="w-5 h-5" />
-            {isSubmitting ? 'Summoning AI...' : 'Create & Analyze'}
-          </button>
-        </div>
       </form>
+
     </div>
   );
 };
